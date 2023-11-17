@@ -41,6 +41,17 @@ This dataset contains sales transactions from a three different branches of Walm
 3. **Customer Analysis:** This analysis aims to uncover the different customers segments, purchase trends and the profitability of each customer segment.
 
 
+## Approach Used
+
+1. **Data Wrangling:** This is the first step where inspection of data is done to make sure NULL values and missing values are detected and data replacement methods are used to replace, missing or NULL values.
+
+2. **Feature Engineering:** This will help use generate some new columns from existing ones.
+   - Add a new column named time_of_day to give insight of sales in the Morning, Afternoon and Evening. This will help answer the question on which part of the day most sales are       made.
+   - Add a new column named day_name that contains the extracted days of the week on which the given transaction took place (Mon, Tue, Wed, Thur, Fri). This will help answer the        question on which week of the day each branch is busiest.
+   - Add a new column named month_name that contains the extracted months of the year on which the given transaction took place (Jan, Feb, Mar). Help determine which month of the       year has the most sales and profit.
+
+3. **Exploratory Data Analysis (EDA):** Exploratory data analysis is done to answer the listed questions and aims of this project.
+
 ## Business Questions to Answer:
 
 ### Generic Question
