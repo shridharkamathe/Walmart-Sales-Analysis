@@ -1,4 +1,4 @@
-# Walmart-Sales-Analysis
+# Walmart-Sales-Analysis-with-MySQL
 
 <img align="right" alt="Coding" width="400" src="https://github.com/shridharkamathe/Walmart-Sales-Analysis/assets/124047047/dff1e485-a82a-48a9-9181-5d557f0acc4e">
 
