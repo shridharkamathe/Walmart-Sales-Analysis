@@ -88,23 +88,19 @@ SELECT
     branch
 FROM sales;
 
+
 -- --------------------------------------------------------------------
 -- ---------------------------- Product -------------------------------
 -- --------------------------------------------------------------------
 
 -- How many unique product lines does the data have?
 SELECT
-	DISTINCT product_line
-FROM sales;
+    DISTINCT product_line,
+    ROW_NUMBER() OVER (ORDER BY product_line) AS row_num
+FROM
+    sales
+GROUP BY 1;
 
-
--- What is the most selling product line
-SELECT
-	SUM(quantity) as qty,
-    product_line
-FROM sales
-GROUP BY product_line
-ORDER BY qty DESC;
 
 -- What is the most selling product line
 SELECT
@@ -129,7 +125,7 @@ SELECT
 	SUM(cogs) AS cogs
 FROM sales
 GROUP BY month_name 
-ORDER BY cogs;
+ORDER BY cogs DESC;
 
 
 -- What product line had the largest revenue?
@@ -147,7 +143,7 @@ SELECT
 	SUM(total) AS total_revenue
 FROM sales
 GROUP BY city, branch 
-ORDER BY total_revenue;
+ORDER BY total_revenue DESC;
 
 
 -- What product line had the largest VAT?
@@ -168,7 +164,7 @@ FROM Wsales;
 SELECT
 	product_line,
 	CASE
-		WHEN AVG(quantity) > 6 THEN "Good"
+		WHEN AVG(quantity) > 5.52 THEN "Good"
         ELSE "Bad"
     END AS remark
 FROM Wsales
@@ -177,7 +173,7 @@ GROUP BY product_line;
 
 -- Which branch sold more products than average product sold?
 SELECT 
-	branch, 
+	branch,
     SUM(quantity) AS qnty
 FROM Wsales
 GROUP BY branch
@@ -219,7 +215,7 @@ FROM Wsales;
 -- What is the most common customer type?
 SELECT
 	customer_type,
-	count(*) as count
+	count(customer_type) as count
 FROM Wsales
 GROUP BY customer_type
 ORDER BY count DESC;
@@ -227,7 +223,7 @@ ORDER BY count DESC;
 -- Which customer type buys the most?
 SELECT
 	customer_type,
-    COUNT(*) as count
+    COUNT(invoice_id) as count
 FROM Wsales
 GROUP BY customer_type
 ORDER BY count DESC;
@@ -255,7 +251,7 @@ ORDER BY gender_cnt DESC;
 -- Which time of the day do customers give most ratings?
 SELECT
 	time_of_day,
-	AVG(rating) AS avg_rating
+	ROUND(AVG(rating),2) as avg_rating
 FROM Wsales
 GROUP BY time_of_day
 ORDER BY avg_rating DESC;
@@ -265,24 +261,41 @@ ORDER BY avg_rating DESC;
 
 -- Which time of the day do customers give most ratings per branch?
 SELECT
-	time_of_day,
-	AVG(rating) AS avg_rating
-FROM Wsales
-WHERE branch = "A"
-GROUP BY time_of_day
-ORDER BY avg_rating DESC;
--- Branch A and C are doing well in ratings, branch B needs to do a 
--- little more to get better ratings.
-
+	branch,
+    time_of_day
+FROM (
+	SELECT
+		branch,
+		time_of_day,
+		COUNT(rating) AS ratings_count,
+		RANK() OVER (PARTITION BY branch ORDER BY COUNT(rating) DESC) AS rank_
+	FROM
+		Wsales
+	GROUP BY
+		branch, time_of_day
+	ORDER BY
+		branch, ratings_count DESC) AS subquery
+WHERE rank_ = 1;
 
 -- Which day of the week has the best average ratings per branch?
-SELECT 
-	day_name,
-	COUNT(day_name) total_sales
-FROM sales
-WHERE branch = "C"
-GROUP BY day_name
-ORDER BY total_sales DESC;
+
+SELECT
+	branch,
+    day_name,
+    average_rating
+    FROM (
+		SELECT 
+			branch,
+			day_name,
+			ROUND(AVG(rating),2) AS average_rating,
+			RANK() OVER(PARTITION BY branch ORDER BY AVG(rating) DESC) as average_ratings
+		FROM 
+			sales
+		GROUP BY 
+			branch, day_name
+		ORDER BY 
+			branch, average_ratings) AS subquery1
+WHERE average_ratings = 1;
 
 
 -- --------------------------------------------------------------------
@@ -294,14 +307,23 @@ ORDER BY total_sales DESC;
 
 -- Number of sales made in each time of the day per weekday 
 SELECT
-	time_of_day,
-	COUNT(*) AS total_sales
-FROM sales
-WHERE day_name = "Sunday"
-GROUP BY time_of_day 
-ORDER BY total_sales DESC;
--- Evenings experience most sales, the stores are 
--- filled during the evening hours
+    day_name,
+    MAX(CASE WHEN time_of_day = 'Morning' THEN total_sales END) AS Morning,
+    MAX(CASE WHEN time_of_day = 'Afternoon' THEN total_sales END) AS Afternoon,
+    MAX(CASE WHEN time_of_day = 'Evening' THEN total_sales END) AS Evening
+FROM (
+    SELECT
+        day_name,
+        time_of_day,
+        COUNT(*) OVER(PARTITION BY day_name, time_of_day) AS total_sales
+    FROM
+        sales
+) AS subquery
+GROUP BY
+    day_name
+ORDER BY
+    day_name;
+
 
 -- Which of the customer types brings the most revenue?
 SELECT
@@ -309,7 +331,7 @@ SELECT
 	ROUND(SUM(total),2) AS total_revenue
 FROM sales
 GROUP BY customer_type
-ORDER BY total_revenue;
+ORDER BY total_revenue DESC;
 
 -- Which city has the largest tax/VAT percent?
 SELECT
@@ -322,10 +344,10 @@ ORDER BY avg_tax_pct DESC;
 -- Which customer type pays the most in VAT?
 SELECT
 	customer_type,
-	AVG(tax_pct) AS total_tax
+	SUM(tax_pct) as total_tax
 FROM sales
 GROUP BY customer_type
-ORDER BY total_tax;
+ORDER BY total_tax DESC;
 
 -- --------------------------------------------------------------------
 -- --------------------------------------------------------------------
